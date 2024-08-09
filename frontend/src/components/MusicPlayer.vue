@@ -2,10 +2,13 @@
   <div v-if="isPlaying || sound" class="player">
     <div class="player-info">
       <div class="album-art">
-        <img :src="currentTrack?.albumArt || '/path/to/default-art.png'" alt="Album Art" />
+        <img v-if="albumArtUrl" :src="albumArtUrl" alt="Album Art" />
+        <div v-else class="default-album-art">
+          <i class="fas fa-compact-disc"></i>
+        </div>
       </div>
       <div class="track-details">
-        <span class="player-title">{{ currentTrack?.title || 'Unknown Title' }}</span>
+        <span class="player-title">{{ currentTrack?.title || 'Unknown Title' }}</span><br>
         <span class="player-artist">{{ currentTrack?.artist || 'Unknown Artist' }} | {{ currentTrack?.album || 'Unknown Album' }}</span>
       </div>
     </div>
@@ -21,14 +24,19 @@
       <span class="time">{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</span>
     </div>
     <div class="player-options">
+      <div class="ai-shuffle-container" @click="aiShuffleQueue" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
+        <button>
+          <i class="fas fa-brain"></i>
+        </button>
+        <div v-if="showTooltip" class="tooltip">
+          Click here to have the artificial intelligence sort your play queue.
+        </div>
+      </div>
       <button @click="setPlayerMode('loop')" :class="{ active: musicPlayerMode === 'loop' }">
         <i class="fas fa-sync-alt"></i>
       </button>
       <button @click="setPlayerMode('shuffle')" :class="{ active: musicPlayerMode === 'shuffle' }">
         <i class="fas fa-random"></i>
-      </button>
-      <button @click="setPlayerMode('aiShuffle')" :class="{ active: musicPlayerMode === 'aiShuffle' }">
-        <i class="fas fa-brain"></i>
       </button>
       <div class="queue-control" @mouseenter="showQueue = true" @mouseleave="hideQueue">
         <i class="fas fa-list"></i>
@@ -46,12 +54,16 @@
         <input type="range" v-show="showVolume" min="0" max="1" step="0.01" v-model="volume" @input="changeVolume" class="volume-range" />
       </div>
     </div>
+    <div v-if="showPopup" class="popup">
+      Congratulations. The AI has just sorted your queue so that the most similar songs play next to each other.
+    </div>
   </div>
 </template>
 
 <script>
 import { Howl } from 'howler';
 import aiShuffle from '@/utils/aiShuffle';
+import axios from 'axios';
 
 export default {
   name: 'MusicPlayer',
@@ -66,8 +78,11 @@ export default {
       showVolume: false,
       musicPlayerMode: 'normal',
       showQueue: false,
+      showTooltip: false,
+      showPopup: false,
       playlist: [],
-      currentIndex: 0
+      currentIndex: 0,
+      albumArtUrl: null,
     };
   },
   created() {
@@ -82,7 +97,28 @@ export default {
       return this.playlist.slice(this.currentIndex + 1, this.currentIndex + 6);
     }
   },
+  watch: {
+    currentTrack(newTrack) {
+      if (newTrack && newTrack._id) {
+        localStorage.setItem('currentlyPlayingTrack', JSON.stringify(newTrack));
+        this.fetchAlbumArt(newTrack.album, newTrack.artist);
+      }
+    }
+  },
   methods: {
+    async fetchAlbumArt(albumName, artistName) {
+      try {
+        const response = await axios.get(`http://localhost:5000/api/image/check`, {
+          params: { 'type': 'album', 'artistName': artistName, 'albumName': albumName  },
+        });
+        this.albumArtUrl = response.data.imagePath
+          ? `http://localhost:5000/${response.data.imagePath}`
+          : null;
+      } catch (error) {
+        console.error('Error fetching album art:', error);
+        this.albumArtUrl = null;
+      }
+    },
     playTrack(track, playlist = [], startIndex = 0) {
       if (this.sound) {
         this.sound.unload();
@@ -90,10 +126,12 @@ export default {
       if (playlist.length > 0) {
         this.playlist = playlist;
         this.currentIndex = startIndex;
-        if (this.musicPlayerMode === 'aiShuffle') {
-          this.playlist = aiShuffle(this.playlist);
-        }
         localStorage.setItem('currentlyPlayingTrackQueue', JSON.stringify(this.playlist));
+      } else {
+        const savedQueue = localStorage.getItem('currentlyPlayingTrackQueue');
+        if (savedQueue) {
+          this.playlist = JSON.parse(savedQueue);
+        }
       }
       this.currentTrack = track || this.playlist[this.currentIndex] || {};
       this.loadAndPlayTrack(this.currentTrack);
@@ -161,26 +199,25 @@ export default {
     setPlayerMode(mode) {
       this.musicPlayerMode = this.musicPlayerMode === mode ? 'normal' : mode;
       localStorage.setItem('musicPlayerMode', this.musicPlayerMode);
-      if (this.musicPlayerMode === 'aiShuffle') {
-        this.playlist = aiShuffle(this.playlist);
-        localStorage.setItem('currentlyPlayingTrackQueue', JSON.stringify(this.playlist));
-      }
+    },
+    aiShuffleQueue() {
+      this.playlist = aiShuffle([...this.playlist]);
+      localStorage.setItem('currentlyPlayingTrackQueue', JSON.stringify(this.playlist));
+      this.showPopupMessage();
+    },
+    showPopupMessage() {
+      this.showPopup = true;
+      setTimeout(() => {
+        this.showPopup = false;
+      }, 3000);
     },
     prevTrack() {
-      if (this.musicPlayerMode === 'shuffle' || this.musicPlayerMode === 'aiShuffle') {
-        this.shuffleTrack();
-      } else {
-        this.currentIndex = this.currentIndex > 0 ? this.currentIndex - 1 : this.playlist.length - 1;
-        this.playTrack(this.playlist[this.currentIndex]);
-      }
+      this.currentIndex = this.currentIndex > 0 ? this.currentIndex - 1 : this.playlist.length - 1;
+      this.playTrack(this.playlist[this.currentIndex]);
     },
     nextTrack() {
-      if (this.musicPlayerMode === 'shuffle' || this.musicPlayerMode === 'aiShuffle') {
-        this.shuffleTrack();
-      } else {
-        this.currentIndex = this.currentIndex < this.playlist.length - 1 ? this.currentIndex + 1 : 0;
-        this.playTrack(this.playlist[this.currentIndex]);
-      }
+      this.currentIndex = this.currentIndex < this.playlist.length - 1 ? this.currentIndex + 1 : 0;
+      this.playTrack(this.playlist[this.currentIndex]);
     },
     onTrackEnded() {
       if (this.musicPlayerMode === 'loop') {
@@ -189,22 +226,10 @@ export default {
         this.nextTrack();
       }
     },
-    shuffleTrack() {
-      const shuffledIndex = Math.floor(Math.random() * this.playlist.length);
-      this.currentIndex = shuffledIndex;
-      this.playTrack(this.playlist[shuffledIndex]);
-    },
     hideQueue() {
       setTimeout(() => {
         this.showQueue = false;
       }, 2000);
-    }
-  },
-  watch: {
-    currentTrack(newTrack) {
-      if (newTrack && newTrack._id) {
-        localStorage.setItem('currentlyPlayingTrack', JSON.stringify(newTrack));
-      }
     }
   }
 };
@@ -239,12 +264,21 @@ export default {
   margin-right: 15px;
   border-radius: 5px;
   overflow: hidden;
+  background-color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .album-art img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.album-art i {
+  font-size: 24px;
+  color: #1DB954;
 }
 
 .track-details {
@@ -398,5 +432,43 @@ export default {
   border-radius: 50%;
   background: #1DB954;
   cursor: pointer;
+}
+
+.ai-shuffle-container {
+  position: relative;
+}
+
+.tooltip {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+  font-size: 0.8rem;
+}
+
+.popup {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1DB954;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 5px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  font-size: 1rem;
+  z-index: 1000;
+}
+
+.control-buttons {
+  display: flex;
+  justify-content: center;
+  width: 50%;
+  margin-bottom: 5px;
 }
 </style>
