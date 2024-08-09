@@ -1,32 +1,60 @@
 <template>
-  <div class="container">
-    <h1>Music Player</h1>
-    <MusicList @edit="handleEdit" @play="handlePlay" />
-    <div v-if="selectedMusic" class="edit-modal">
-      <form @submit.prevent="handleSubmit">
-        <h2>Edit Music</h2>
-        <div class="form-group">
-          <label>Title</label>
-          <input type="text" v-model="form.title" />
+  <div class="home-view">
+    <section class="home-section">
+      <h2>Featured Albums</h2>
+      <div class="album-grid">
+        <div v-for="album in albums" :key="album.name" class="album-card">
+          <router-link :to="{ name: 'Album', params: { artistName: album.artist, albumName: album.name } }">
+            <div class="album-image-container">
+              <img v-if="album.hasImage" :src="album.imageUrl" alt="Album Image" class="album-image" />
+              <div v-else class="placeholder-icon">
+                <i class="fas fa-compact-disc"></i> <!-- Ikona albumu -->
+              </div>
+            </div>
+            <p class="album-title">{{ album.name }}</p>
+            <p class="album-artist">{{ album.artist }}</p>
+          </router-link>
         </div>
-        <div class="form-group">
-          <label>Artist</label>
-          <input type="text" v-model="form.artist" />
+      </div>
+    </section>
+    
+    <section class="home-section">
+      <h2>Featured Playlists</h2>
+      <div class="playlist-grid">
+        <div v-for="playlist in playlists" :key="playlist._id" class="playlist-card">
+          <router-link :to="{ name: 'PlaylistDetail', params: { playlistId: playlist._id } }">
+            <div class="playlist-image-container">
+              <img v-if="playlist.hasImage" :src="playlist.imageUrl" alt="Playlist Image" class="playlist-image" />
+              <div v-else class="placeholder-icon">
+                <i class="fas fa-music"></i> <!-- Ikona playlisty -->
+              </div>
+            </div>
+            <p class="playlist-title">{{ playlist.name }}</p>
+          </router-link>
         </div>
-        <div class="form-group">
-          <label>Album</label>
-          <input type="text" v-model="form.album" />
+      </div>
+    </section>
+    
+    <section class="home-section">
+      <h2>Featured Artists</h2>
+      <div class="artist-grid">
+        <div v-for="artist in artists" :key="artist.name" class="artist-card">
+          <router-link :to="{ name: 'Artist', params: { artistName: artist.name } }">
+            <div class="artist-image-container">
+              <img v-if="artist.hasImage" :src="artist.imageUrl" alt="Artist Image" class="artist-image" />
+              <div v-else class="placeholder-icon artist-placeholder">
+                <i class="fas fa-user"></i> <!-- Ikona artysty -->
+              </div>
+            </div>
+            <p class="artist-name">{{ artist.name }}</p>
+          </router-link>
         </div>
-        <div class="form-group">
-          <label>Genre</label>
-          <input type="text" v-model="form.genre" />
-        </div>
-        <div class="button-group">
-          <button type="submit" class="btn primary">Update</button>
-          <button type="button" @click="closeEdit" class="btn secondary">Cancel</button>
-        </div>
-      </form>
-    </div>
+      </div>
+    </section>
+    
+    <section class="home-section">
+      <MusicList :apiEndpoint="`http://localhost:5000/api/music`" title="All Songs" @play="playTrack" />
+    </section>
   </div>
 </template>
 
@@ -35,121 +63,116 @@ import MusicList from '@/components/MusicList.vue';
 import axios from 'axios';
 
 export default {
-  name: 'HomeView',
   components: {
     MusicList
   },
   data() {
     return {
-      selectedMusic: null,
-      form: {
-        title: '',
-        artist: '',
-        album: '',
-        genre: '',
-      },
+      albums: [],
+      playlists: [],
+      artists: [],
     };
   },
+  async created() {
+    await this.fetchHomeData();
+  },
   methods: {
-    handleEdit(music) {
-      this.selectedMusic = music;
-      this.form = {
-        title: music.title || '',
-        artist: music.artist || '',
-        album: music.album || '',
-        genre: music.genre || '',
-      };
-    },
-    async handleSubmit() {
+    async fetchHomeData() {
       try {
-        await axios.patch(`http://localhost:5000/api/music/${this.selectedMusic._id}`, this.form);
-        this.selectedMusic = null; // Zamknij modal po aktualizacji
+        const [albumsRes, playlistsRes, artistsRes] = await Promise.all([
+          axios.get('http://localhost:5000/api/home/albums'),
+          axios.get('http://localhost:5000/api/home/playlists'),
+          axios.get('http://localhost:5000/api/home/artists'),
+        ]);
+
+        this.albums = albumsRes.data;
+        this.playlists = playlistsRes.data;
+        this.artists = artistsRes.data;
       } catch (error) {
-        console.error('Error updating music details:', error);
+        console.error('Error fetching home data:', error);
       }
     },
-    closeEdit() {
-      this.selectedMusic = null;
-    },
-    handlePlay(track) {
-      this.$emit('play', track); // Wysyłanie zdarzenia do rodzica
+    playTrack(track) {
+      this.$emit('play', track);
     }
   }
 };
 </script>
 
 <style>
-.container {
+.home-view {
   padding: 2rem;
-  position: relative;
-  min-height: 100vh;
-  padding-bottom: 80px; /* Aby dodać miejsce na odtwarzacz */
 }
 
-h1 {
-  color: #1DB954;
+.home-section {
+  margin-bottom: 3rem;
+}
+
+.album-grid, .playlist-grid, .artist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.album-card, .playlist-card, .artist-card {
   text-align: center;
-  padding-top: 20px;
 }
 
-.edit-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: #1e1e1e;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-}
-
-.form-group input {
+.album-image-container, .playlist-image-container {
   width: 100%;
-  padding: 0.5rem;
-  border-radius: 4px;
-  border: 1px solid #333;
-  background-color: #2c2c2c;
-  color: white;
-}
-
-.button-group {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-left: 0.5rem;
-}
-
-.btn.primary {
-  background-color: #1DB954;
-  color: black;
-  border: none;
-}
-
-.btn.primary:hover {
-  background-color: #bb86fc;
-}
-
-.btn.secondary {
+  height: 150px;
+  position: relative;
   background-color: #333;
-  color: white;
-  border: 1px solid #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
 }
 
-.btn.secondary:hover {
-  background-color: #555;
+.artist-image-container {
+  width: 100%;
+  height: 150px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.album-image, .playlist-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.artist-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.placeholder-icon {
+  color: #1DB954;
+  font-size: 3rem;
+}
+
+.artist-placeholder {
+  border-radius: 50%;
+  background-color: #333;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.album-title, .playlist-title, .artist-name {
+  font-weight: bold;
+  margin-top: 0.5rem;
+}
+
+.album-artist {
+  color: #888;
 }
 </style>

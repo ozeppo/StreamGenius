@@ -1,17 +1,22 @@
 <template>
   <div id="app">
-    <router-view @play="playTrack"/>
+    <PlaylistSidebar />
+    <div class="main-content">
+      <router-view @play="playTrack"/>
+    </div>
     <MusicPlayer ref="player" />
   </div>
 </template>
 
 <script>
 import MusicPlayer from './components/MusicPlayer.vue';
+import PlaylistSidebar from './components/PlaylistSidebar.vue';
 
 export default {
   name: 'App',
   components: {
-    MusicPlayer
+    MusicPlayer,
+    PlaylistSidebar
   },
   methods: {
     playTrack(track) {
@@ -32,9 +37,15 @@ body {
 }
 
 #app {
-  position: relative;
+  display: flex;
   min-height: 100vh;
+  width: 100%;
+}
+
+.main-content {
+  flex-grow: 1;
   padding-bottom: 80px; /* Aby dodać miejsce na odtwarzacz */
+  width: 100%;
 }
 
 h1 {

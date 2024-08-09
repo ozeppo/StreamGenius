@@ -143,3 +143,37 @@ exports.streamMusic = async (req, res) => {
       res.status(500).json({ message: error.message });
   }
 };
+
+exports.getMusicByArtist = async (req, res) => {
+  try {
+    console.log(`Fetching music for artist: ${req.params.artistName}`);
+    const music = await Music.find({ artist: req.params.artistName });
+
+    if (!music.length) {
+      console.log('No music found for this artist');
+      return res.status(404).json({ message: 'No music found for this artist' });
+    }
+
+    res.status(200).json(music);
+  } catch (error) {
+    console.error('Error fetching music by artist:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.getMusicByAlbum = async (req, res) => {
+  try {
+    console.log(`Fetching music for album: ${req.params.albumName} by artist: ${req.params.artistName}`);
+    const music = await Music.find({ album: req.params.albumName, artist: req.params.artistName });
+
+    if (!music.length) {
+      console.log('No music found for this album');
+      return res.status(404).json({ message: 'No music found for this album' });
+    }
+
+    res.status(200).json(music);
+  } catch (error) {
+    console.error('Error fetching music by album:', error);
+    res.status(400).json({ message: error.message });
+  }
+};

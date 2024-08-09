@@ -1,15 +1,46 @@
 <template>
-  <div v-if="sound" class="player">
+  <div v-if="isPlaying || sound" class="player">
     <div class="player-info">
-      <span class="player-title">{{ currentTrack.title }}</span>
-      <span class="player-artist">{{ currentTrack.artist }} | {{ currentTrack.album }}</span>
+      <div class="album-art">
+        <img :src="currentTrack?.albumArt || '/path/to/default-art.png'" alt="Album Art" />
+      </div>
+      <div class="track-details">
+        <span class="player-title">{{ currentTrack?.title || 'Unknown Title' }}</span>
+        <span class="player-artist">{{ currentTrack?.artist || 'Unknown Artist' }} | {{ currentTrack?.album || 'Unknown Album' }}</span>
+      </div>
     </div>
     <div class="player-controls">
-      <button @click="togglePlay">
-        <i :class="isPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
-      </button>
-      <input type="range" min="0" :max="duration" v-model="currentTime" @input="seek" class="time-range"/>
+      <div class="control-buttons">
+        <button @click="prevTrack"><i class="fas fa-backward"></i></button>
+        <button @click="togglePlay">
+          <i :class="isPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
+        </button>
+        <button @click="nextTrack"><i class="fas fa-forward"></i></button>
+      </div>
+      <input type="range" min="0" :max="duration" v-model="currentTime" @input="seek" class="time-range" />
       <span class="time">{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</span>
+    </div>
+    <div class="player-options">
+      <button @click="setPlayerMode('loop')" :class="{ active: musicPlayerMode === 'loop' }">
+        <i class="fas fa-sync-alt"></i>
+      </button>
+      <button @click="setPlayerMode('shuffle')" :class="{ active: musicPlayerMode === 'shuffle' }">
+        <i class="fas fa-random"></i>
+      </button>
+      <button @click="setPlayerMode('aiShuffle')" :class="{ active: musicPlayerMode === 'aiShuffle' }">
+        <i class="fas fa-brain"></i>
+      </button>
+      <div class="queue-control" @mouseenter="showQueue = true" @mouseleave="hideQueue">
+        <i class="fas fa-list"></i>
+        <div v-show="showQueue" class="queue-list">
+          <p v-if="upcomingTracks.length === 0">No upcoming tracks</p>
+          <ul>
+            <li v-for="(track, index) in upcomingTracks" :key="index">
+              {{ track.title || 'Untitled' }} - {{ track.artist || 'Unknown Artist' }}
+            </li>
+          </ul>
+        </div>
+      </div>
       <div class="volume-control" @mouseenter="showVolume = true" @mouseleave="hideVolume">
         <i class="fas fa-volume-up"></i>
         <input type="range" v-show="showVolume" min="0" max="1" step="0.01" v-model="volume" @input="changeVolume" class="volume-range" />
@@ -20,6 +51,7 @@
 
 <script>
 import { Howl } from 'howler';
+import aiShuffle from '@/utils/aiShuffle';
 
 export default {
   name: 'MusicPlayer',
@@ -29,21 +61,48 @@ export default {
       isPlaying: false,
       currentTime: 0,
       duration: 0,
-      currentTrack: {
-        title: '',
-        artist: '',
-        album: ''
-      },
+      currentTrack: null,
       volume: 1.0,
-      showVolume: false
+      showVolume: false,
+      musicPlayerMode: 'normal',
+      showQueue: false,
+      playlist: [],
+      currentIndex: 0
     };
   },
+  created() {
+    const savedQueue = localStorage.getItem('currentlyPlayingTrackQueue');
+    if (savedQueue) {
+      this.playlist = JSON.parse(savedQueue);
+    }
+    this.musicPlayerMode = localStorage.getItem('musicPlayerMode') || 'normal';
+  },
+  computed: {
+    upcomingTracks() {
+      return this.playlist.slice(this.currentIndex + 1, this.currentIndex + 6);
+    }
+  },
   methods: {
-    playTrack(track) {
+    playTrack(track, playlist = [], startIndex = 0) {
       if (this.sound) {
         this.sound.unload();
       }
-      this.currentTrack = track;
+      if (playlist.length > 0) {
+        this.playlist = playlist;
+        this.currentIndex = startIndex;
+        if (this.musicPlayerMode === 'aiShuffle') {
+          this.playlist = aiShuffle(this.playlist);
+        }
+        localStorage.setItem('currentlyPlayingTrackQueue', JSON.stringify(this.playlist));
+      }
+      this.currentTrack = track || this.playlist[this.currentIndex] || {};
+      this.loadAndPlayTrack(this.currentTrack);
+    },
+    loadAndPlayTrack(track) {
+      if (!track || !track._id) {
+        console.error("Invalid track data:", track);
+        return;
+      }
       this.sound = new Howl({
         src: [`http://localhost:5000/api/music/stream/${track._id}`],
         html5: true,
@@ -54,12 +113,10 @@ export default {
           this.isPlaying = true;
           requestAnimationFrame(this.step);
         },
-        onpause: () => {
-          this.isPlaying = false;
-        },
         onend: () => {
           this.isPlaying = false;
           this.currentTime = 0;
+          this.onTrackEnded();
         }
       });
       this.sound.play();
@@ -71,6 +128,7 @@ export default {
       } else {
         this.sound.play();
       }
+      this.isPlaying = !this.isPlaying;
     },
     seek() {
       if (this.sound) {
@@ -99,12 +157,60 @@ export default {
       const minutes = Math.floor(seconds / 60);
       const secs = Math.floor(seconds % 60);
       return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+    },
+    setPlayerMode(mode) {
+      this.musicPlayerMode = this.musicPlayerMode === mode ? 'normal' : mode;
+      localStorage.setItem('musicPlayerMode', this.musicPlayerMode);
+      if (this.musicPlayerMode === 'aiShuffle') {
+        this.playlist = aiShuffle(this.playlist);
+        localStorage.setItem('currentlyPlayingTrackQueue', JSON.stringify(this.playlist));
+      }
+    },
+    prevTrack() {
+      if (this.musicPlayerMode === 'shuffle' || this.musicPlayerMode === 'aiShuffle') {
+        this.shuffleTrack();
+      } else {
+        this.currentIndex = this.currentIndex > 0 ? this.currentIndex - 1 : this.playlist.length - 1;
+        this.playTrack(this.playlist[this.currentIndex]);
+      }
+    },
+    nextTrack() {
+      if (this.musicPlayerMode === 'shuffle' || this.musicPlayerMode === 'aiShuffle') {
+        this.shuffleTrack();
+      } else {
+        this.currentIndex = this.currentIndex < this.playlist.length - 1 ? this.currentIndex + 1 : 0;
+        this.playTrack(this.playlist[this.currentIndex]);
+      }
+    },
+    onTrackEnded() {
+      if (this.musicPlayerMode === 'loop') {
+        this.playTrack(this.currentTrack);
+      } else {
+        this.nextTrack();
+      }
+    },
+    shuffleTrack() {
+      const shuffledIndex = Math.floor(Math.random() * this.playlist.length);
+      this.currentIndex = shuffledIndex;
+      this.playTrack(this.playlist[shuffledIndex]);
+    },
+    hideQueue() {
+      setTimeout(() => {
+        this.showQueue = false;
+      }, 2000);
+    }
+  },
+  watch: {
+    currentTrack(newTrack) {
+      if (newTrack && newTrack._id) {
+        localStorage.setItem('currentlyPlayingTrack', JSON.stringify(newTrack));
+      }
     }
   }
 };
 </script>
 
-<style>
+<style scoped>
 .player {
   position: fixed;
   bottom: 0;
@@ -114,62 +220,97 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
+  padding: 10px 20px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
   z-index: 1000;
 }
 
 .player-info {
-  flex: 1;
+  display: flex;
+  align-items: center;
+  flex: 0.25;
   color: white;
   text-align: left;
 }
 
+.album-art {
+  width: 50px;
+  height: 50px;
+  margin-right: 15px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.album-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.track-details {
+  overflow: hidden;
+}
+
 .player-title {
-  display: block;
   font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .player-artist {
-  display: block;
   font-size: 0.875rem;
   color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .player-controls {
   display: flex;
   align-items: center;
-  flex: 2;
+  flex: 0.5;
   justify-content: center;
+  flex-direction: column;
 }
 
-.player-controls button {
+.control-buttons {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.control-buttons button {
   background: none;
   border: none;
-  color: #1DB954;
+  color: white;
   cursor: pointer;
   font-size: 1.5rem;
-  margin-right: 1rem;
+  margin: 0 10px;
 }
 
-.player-controls button:hover {
-  color: #bb86fc;
+.control-buttons button:hover {
+  color: #1DB954;
 }
 
-.player-controls .time-range {
-  -webkit-appearance: none;
-  width: 60%;
+.time-range {
+  width: 100%;
   height: 5px;
   background: #333;
   border-radius: 5px;
   outline: none;
-  transition: background 0.3s;
-  margin: 0 1rem;
 }
 
-.player-controls .time-range::-webkit-slider-thumb {
+.time-range::-webkit-slider-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #1DB954;
+  cursor: pointer;
   -webkit-appearance: none;
-  appearance: none;
+}
+
+.time-range::-moz-range-thumb {
   width: 15px;
   height: 15px;
   border-radius: 50%;
@@ -177,18 +318,46 @@ export default {
   cursor: pointer;
 }
 
-.player-controls .time-range::-moz-range-thumb {
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  background: #1DB954;
-  cursor: pointer;
-}
-
-.player-controls .time {
+.time {
   color: #888;
   font-size: 0.875rem;
-  margin-left: 1rem;
+  margin-left: 10px;
+}
+
+.player-options {
+  display: flex;
+  align-items: center;
+  flex: 0.25;
+  justify-content: flex-end;
+}
+
+.player-options button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 1.5rem;
+  margin-left: 10px;
+}
+
+.player-options button.active {
+  color: #1DB954;
+}
+
+.queue-control {
+  position: relative;
+  display: inline-block;
+}
+
+.queue-list {
+  position: absolute;
+  bottom: 50px;
+  right: 0;
+  background-color: #1e1e1e;
+  border: 1px solid #1DB954;
+  padding: 10px;
+  border-radius: 5px;
+  width: 200px;
 }
 
 .volume-control {
@@ -197,23 +366,16 @@ export default {
   align-items: center;
 }
 
-.volume-control i {
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #1DB954;
-}
-
-.volume-control .volume-range {
+.volume-range {
   position: absolute;
-  bottom: 25px;
+  bottom: 50px;
   right: 0;
-  -webkit-appearance: none;
   width: 100px;
   height: 5px;
   background: #333;
   border-radius: 5px;
   outline: none;
-  transition: background 0.3s;
+  display: none;
 }
 
 .volume-control:hover .volume-range,
@@ -221,17 +383,16 @@ export default {
   display: block;
 }
 
-.volume-control .volume-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
+.volume-range::-webkit-slider-thumb {
   width: 15px;
   height: 15px;
   border-radius: 50%;
   background: #1DB954;
   cursor: pointer;
+  -webkit-appearance: none;
 }
 
-.volume-control .volume-range::-moz-range-thumb {
+.volume-range::-moz-range-thumb {
   width: 15px;
   height: 15px;
   border-radius: 50%;

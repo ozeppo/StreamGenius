@@ -1,66 +1,137 @@
 <template>
-    <div class="album-container">
-      <h2>{{ album.title }}</h2>
-      <h3>Songs</h3>
-      <ul class="song-list">
-        <li v-for="song in songs" :key="song._id" @click="playMusic(song)">
-          {{ song.title }}
-        </li>
-      </ul>
+    <div class="album-view">
+      <div class="album-header">
+        <h2>{{ albumName }} by {{ artistName }}</h2>
+        <div class="album-image-container">
+          <div v-if="albumImage" class="image-preview">
+            <img :src="albumImage" alt="Album Image" />
+          </div>
+          <div v-else class="upload-image-placeholder">
+            <label for="upload-image" class="upload-label">
+              <input type="file" id="upload-image" @change="onFileChange" />
+              <span>Upload Image</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <MusicList :apiEndpoint="`http://localhost:5000/api/music/artist/${artistName}/${albumName}`" :title="`Songs from ${albumName}`" @play="playTrack" />
     </div>
   </template>
   
   <script>
+  import MusicList from '@/components/MusicList.vue';
   import axios from 'axios';
   
   export default {
+    components: {
+      MusicList
+    },
     data() {
       return {
-        album: {},
-        songs: []
+        artistName: this.$route.params.artistName,
+        albumName: this.$route.params.albumName,
+        albumImage: null,
+        imageFile: null,
       };
     },
     async created() {
-      const albumId = this.$route.params.id;
-      try {
-        const albumRes = await axios.get(`http://localhost:5000/api/albums/${albumId}`);
-        const songsRes = await axios.get(`http://localhost:5000/api/songs?album=${albumId}`);
-        this.album = albumRes.data;
-        this.songs = songsRes.data;
-      } catch (error) {
-        console.error('Error fetching album data:', error);
-      }
+      await this.checkImage();
     },
     methods: {
-      playMusic(song) {
-        this.$root.playTrack(song);
+      async checkImage() {
+        try {
+          const res = await axios.get('http://localhost:5000/api/images/check', {
+            params: {
+              type: 'album',
+              artistName: this.artistName,
+              albumName: this.albumName,
+            }
+          });
+  
+          if (res.data.exists) {
+            this.albumImage = `http://localhost:5000${res.data.imagePath}`;
+          }
+        } catch (error) {
+          console.error('Error checking image:', error);
+        }
+      },
+      onFileChange(event) {
+        this.imageFile = event.target.files[0];
+        this.uploadImage();
+      },
+      async uploadImage() {
+        if (this.imageFile) {
+          const formData = new FormData();
+          formData.append('type', 'album');
+          formData.append('artistName', this.artistName);
+          formData.append('albumName', this.albumName);
+          formData.append('image', this.imageFile);
+  
+          try {
+            await axios.post('http://localhost:5000/api/images/upload', formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
+            });
+  
+            this.checkImage();
+          } catch (error) {
+            console.error('Error uploading image:', error);
+          }
+        }
+      },
+      playTrack(track) {
+        this.$emit('play', track);
       }
     }
   };
   </script>
   
   <style>
-  .album-container {
+  .album-view {
     padding: 2rem;
   }
   
-  h2, h3 {
-    color: #1DB954;
+  .album-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
   
-  .song-list {
-    list-style: none;
-    padding: 0;
+  .album-image-container {
+    width: 150px;
+    height: 150px;
+    position: relative;
   }
   
-  .song-list li {
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #333;
+  .image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .upload-image-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background-color: #333;
     cursor: pointer;
   }
   
-  .song-list li:hover {
-    color: #bb86fc;
+  .upload-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: #1DB954;
+    text-align: center;
+  }
+  
+  .upload-label input {
+    display: none;
   }
   </style>
   
