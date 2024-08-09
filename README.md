@@ -27,7 +27,7 @@ To set up the StreamGenius on your own server, follow these steps:
 1. **Clone the Repository:**
 
    ```bash
-   git clone https://github.com/yourusername/ai-music-player.git
+   git clone https://github.com/ozeppo/StreamGenius.git
    cd ai-music-player
    ```
 
@@ -92,5 +92,6 @@ This project is licensed under the MIT License.
 ## Screenshots
 
 <!-- Placeholder for screenshots of the application -->
-![Home Screen](path/to/screenshot1.png)
-![Music Player](path/to/screenshot2.png)
+![Home Screen](https://i.imgur.com/1TH2KGU.png)
+![Artist Profile](https://i.imgur.com/US4TjwV.png)
+![Albums](https://i.imgur.com/SzSL0BS.png)

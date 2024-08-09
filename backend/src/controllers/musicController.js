@@ -144,6 +144,28 @@ exports.streamMusic = async (req, res) => {
   }
 };
 
+exports.searchMusic = async (req, res) => {
+  try {
+    const searchQuery = req.query.query; // Pobranie parametru zapytania
+    console.log("Searching for: " + searchQuery);
+
+    // Wyszukiwanie po tytule, artyście, albumie i gatunku
+    const results = await Music.find({
+      $or: [
+        { title: { $regex: searchQuery, $options: 'i' } }, // case-insensitive search
+        { artist: { $regex: searchQuery, $options: 'i' } },
+        { album: { $regex: searchQuery, $options: 'i' } },
+        { genre: { $regex: searchQuery, $options: 'i' } }
+      ]
+    });
+
+    res.status(200).json(results);
+  } catch (error) {
+    console.error('Error during search:', error); // Dodanie logowania błędów
+    res.status(500).json({ error: error.message });
+  }
+};
+
 exports.getMusicByArtist = async (req, res) => {
   try {
     console.log(`Fetching music for artist: ${req.params.artistName}`);

@@ -9,6 +9,8 @@ router.post('/upload', upload.single('file'), musicController.uploadMusic);
 // Update info
 router.patch('/:id', musicController.updateMetadata);
 
+router.get('/search', musicController.searchMusic);
+
 // Get infos for musics, artists and albums
 router.get('/', musicController.getAllMusic);
 router.get('/artist/:artistName', musicController.getMusicByArtist);

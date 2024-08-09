@@ -15,8 +15,11 @@
     <div class="player-controls">
       <div class="control-buttons">
         <button @click="prevTrack"><i class="fas fa-backward"></i></button>
-        <button @click="togglePlay">
-          <i :class="isPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
+        <button v-if="isPlaying" @click="togglePlay">
+          <i class="fas fa-pause"></i>
+        </button>
+        <button v-else @click="togglePlay">
+          <i class="fas fa-play"></i>
         </button>
         <button @click="nextTrack"><i class="fas fa-forward"></i></button>
       </div>

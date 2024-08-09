@@ -4,6 +4,7 @@ import UploadView from './views/UploadView.vue';
 import ArtistView from './views/ArtistView.vue';
 import AlbumView from './views/AlbumView.vue';
 import PlaylistDetailView from './views/PlaylistDetailView.vue';
+import SearchResults from '@/views/SearchResults.vue';
 
 const routes = [
     {
@@ -30,7 +31,12 @@ const routes = [
       path: '/playlist/:playlistId',
       name: 'PlaylistDetail',
       component: PlaylistDetailView
-    }
+    },
+    { 
+      path: '/search', 
+      name: 'SearchResults', 
+      component: SearchResults 
+    },
   ];
   
   const router = createRouter({

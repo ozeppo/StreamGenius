@@ -1,8 +1,11 @@
 <template>
   <div id="app">
-    <PlaylistSidebar />
-    <div class="main-content">
-      <router-view @play="playTrack"/>
+    <HeaderComponent />
+    <div class="content-wrapper">
+      <PlaylistSidebar />
+      <div class="main-content">
+        <router-view @play="playTrack"/>
+      </div>
     </div>
     <MusicPlayer ref="player" />
   </div>
@@ -11,12 +14,14 @@
 <script>
 import MusicPlayer from './components/MusicPlayer.vue';
 import PlaylistSidebar from './components/PlaylistSidebar.vue';
+import HeaderComponent from './components/HeaderComponent.vue';
 
 export default {
   name: 'App',
   components: {
     MusicPlayer,
-    PlaylistSidebar
+    PlaylistSidebar,
+    HeaderComponent
   },
   methods: {
     playTrack(track) {
@@ -27,8 +32,6 @@ export default {
 </script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap');
-
 body {
   font-family: 'Outfit', sans-serif;
   margin: 0;
@@ -38,14 +41,22 @@ body {
 
 #app {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
+  width: 100%;
+}
+
+.content-wrapper {
+  display: flex;
+  flex-grow: 1;
   width: 100%;
 }
 
 .main-content {
   flex-grow: 1;
-  padding-bottom: 80px; /* Aby dodać miejsce na odtwarzacz */
+  padding-bottom: 80px; /* Add space for the player */
   width: 100%;
+  overflow-y: auto;
 }
 
 h1 {
