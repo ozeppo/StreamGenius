@@ -32,6 +32,7 @@ export default {
 </script>
 
 <style>
+
 body {
   font-family: 'Outfit', sans-serif;
   margin: 0;

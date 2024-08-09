@@ -8,7 +8,7 @@
             <div class="album-image-container">
               <img v-if="album.hasImage" :src="album.imageUrl" alt="Album Image" class="album-image" />
               <div v-else class="placeholder-icon">
-                <i class="fas fa-compact-disc"></i> <!-- Ikona albumu -->
+                <i class="fas fa-compact-disc"></i> <!-- Album icon -->
               </div>
             </div>
             <p class="album-title">{{ album.name }}</p>

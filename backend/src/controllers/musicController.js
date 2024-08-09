@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const ffmpeg = require('fluent-ffmpeg');
-const { v4: uuidv4 } = require('uuid'); // Dodanie pakietu uuid dla unikalnych nazw plików
+const { v4: uuidv4 } = require('uuid');
 const Music = require('../models/musicModel');
 const { analyzeMusic } = require('../utils/analyzeMusic');
 
@@ -11,18 +11,18 @@ exports.uploadMusic = async (req, res) => {
       const originalFilePath = req.file.path;
       const analysis = await analyzeMusic(originalFilePath);
 
-      // Generowanie unikalnej nazwy pliku
+      // Generate a uniqe UUID for a filename
       const uniqueId = uuidv4();
       const newFileName = `${uniqueId}.mp3`;
       const newFilePath = path.join('uploads', newFileName);
 
-      // Konwersja pliku do MP3 z unikalną nazwą
+      // Convert a file to MP3
       await convertToMp3(originalFilePath, newFilePath);
 
-      // Usuwanie oryginalnego pliku
+      // Delete original file
       fs.unlinkSync(originalFilePath);
 
-      // Zapisanie informacji o pliku i wyników analizy w bazie danych
+      // Save file data and analyze data to database
       const music = new Music({
           title: req.body.title,
           artist: req.body.artist,
@@ -31,14 +31,14 @@ exports.uploadMusic = async (req, res) => {
           bpm: analysis.bpm,
           energy: analysis.energy,
           danceability: analysis.danceability,
-          filePath: newFilePath // Używamy wygenerowanej nazwy pliku
+          filePath: newFilePath
       });
 
       await music.save();
 
       res.status(201).json(music);
   } catch (error) {
-      console.error('Error uploading music:', error); // Dodajemy logowanie błędów
+      console.error('Error uploading music:', error);
       res.status(500).json({ message: error.message });
   }
 };
@@ -64,7 +64,7 @@ exports.updateMetadata = async (req, res) => {
           return res.status(404).json({ message: 'Music not found' });
       }
 
-      // Aktualizujemy tylko te metadane, które są dostarczone
+      // Update metadata
       if (title) music.title = title;
       if (artist) music.artist = artist;
       if (album) music.album = album;
@@ -108,7 +108,6 @@ exports.streamMusic = async (req, res) => {
 
       const musicPath = path.join(__dirname, '..', '..', music.filePath);
 
-      // Logowanie ścieżki pliku
       console.log(`Attempting to stream file: ${musicPath}`);
 
       fs.stat(musicPath, (err, stats) => {
@@ -146,22 +145,34 @@ exports.streamMusic = async (req, res) => {
 
 exports.searchMusic = async (req, res) => {
   try {
-    const searchQuery = req.query.query; // Pobranie parametru zapytania
-    console.log("Searching for: " + searchQuery);
+    const searchQuery = req.query.query;
 
     // Wyszukiwanie po tytule, artyście, albumie i gatunku
     const results = await Music.find({
       $or: [
-        { title: { $regex: searchQuery, $options: 'i' } }, // case-insensitive search
+        { title: { $regex: searchQuery, $options: 'i' } },
         { artist: { $regex: searchQuery, $options: 'i' } },
         { album: { $regex: searchQuery, $options: 'i' } },
         { genre: { $regex: searchQuery, $options: 'i' } }
       ]
     });
 
-    res.status(200).json(results);
+    // Dodajemy ścieżki do obrazów artystów i albumów
+    const updatedResults = await Promise.all(results.map(async (song) => {
+      const artistImagePath = path.join(__dirname, '..', 'uploads', 'artists', song.artist, 'image.jpg');
+      const albumImagePath = path.join(__dirname, '..', 'uploads', 'albums', song.artist, song.album, 'image.jpg');
+
+      song = song.toObject(); // Konwertowanie do obiektu JavaScript, aby można było dodać nowe właściwości
+
+      song.artistImage = fs.existsSync(artistImagePath) ? `/uploads/artists/${song.artist}/image.jpg` : null;
+      song.albumImage = fs.existsSync(albumImagePath) ? `/uploads/albums/${song.artist}/${song.album}/image.jpg` : null;
+
+      return song;
+    }));
+
+    res.status(200).json(updatedResults);
   } catch (error) {
-    console.error('Error during search:', error); // Dodanie logowania błędów
+    console.error('Error during search:', error);
     res.status(500).json({ error: error.message });
   }
 };

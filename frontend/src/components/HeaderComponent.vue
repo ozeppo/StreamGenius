@@ -5,6 +5,7 @@
         <input type="text" v-model="searchQuery" placeholder="Search for songs, artists, albums..." />
         <button type="submit"><i class="fas fa-search"></i></button>
       </form>
+      <router-link to="Upload" class="uploadButton">+</router-link>
     </header>
   </template>
   
@@ -43,7 +44,7 @@
   .search-form {
     display: flex;
     align-items: center;
-    width: 90%;
+    width: 87%;
     justify-content: center;
   }
   
@@ -62,6 +63,13 @@
     color: #1DB954;
     cursor: pointer;
     margin-left: 10px;
+  }
+
+  .uploadButton{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
   }
   </style>
   

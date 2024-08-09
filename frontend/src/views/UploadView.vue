@@ -184,7 +184,7 @@ h2, h3 {
 }
 
 .save-button:hover {
-  background-color: #1ed760;
+  background-color: #1DB954;
 }
 
 .progress-bar {

@@ -21,9 +21,6 @@
             </div>
           </div>
         </li>
-        <li class="music-item">
-          <router-link to="/upload" class="upload-link">+</router-link>
-        </li>
       </ul>
       <div v-if="showPlaylistModal" class="modal">
         <div class="modal-content">

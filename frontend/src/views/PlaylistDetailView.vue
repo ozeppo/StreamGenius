@@ -1,7 +1,7 @@
 <template>
   <div class="playlist-view">
     <div class="playlist-header">
-      <h2>{{ playlistName }}</h2>
+      <h1>{{ playlistName }}</h1>
       <div class="playlist-image-container">
         <div v-if="playlistImage" class="image-preview">
           <img :src="playlistImage" alt="Playlist Image" />
@@ -14,7 +14,7 @@
         </div>
       </div>
     </div>
-    <MusicList :apiEndpoint="`http://localhost:5000/api/playlist/${playlistId}/songs`" :title="`Songs in ${playlistName}`" @play="playTrack" />
+    <MusicList :apiEndpoint="`http://localhost:5000/api/playlist/${playlistId}/songs`" :title="`Track List`" @play="playTrack" />
   </div>
 </template>
 
