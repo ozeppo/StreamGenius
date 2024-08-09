@@ -1,5 +1,5 @@
 
-# StreamGenius 🎵
+# StreamGenius 🎶🧠
 
 StreamGenius is an advanced music player that combines traditional player features with modern AI technology. The application is fully open-source and self-hosted, meaning you can run it on your own server and customize it to suit your needs.
 
