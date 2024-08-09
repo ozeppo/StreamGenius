@@ -1,7 +1,7 @@
 
-# AI Music Player 🎵
+# StreamGenius 🎵
 
-AI Music Player is an advanced music player that combines traditional player features with modern AI technology. The application is fully open-source and self-hosted, meaning you can run it on your own server and customize it to suit your needs.
+StreamGenius is an advanced music player that combines traditional player features with modern AI technology. The application is fully open-source and self-hosted, meaning you can run it on your own server and customize it to suit your needs.
 
 ## Key Features
 
@@ -14,7 +14,7 @@ AI Music Player is an advanced music player that combines traditional player fea
 
 ## Installation Guide
 
-To set up the AI Music Player on your own server, follow these steps:
+To set up the StreamGenius on your own server, follow these steps:
 
 ### Prerequisites
 
@@ -70,7 +70,7 @@ To set up the AI Music Player on your own server, follow these steps:
 
 5. **Access the Application:**
 
-   Open your web browser and navigate to `http://localhost:8080` to access the AI Music Player.
+   Open your web browser and navigate to `http://localhost:8080` to access the StreamGenius.
 
 ## Project Structure
 
