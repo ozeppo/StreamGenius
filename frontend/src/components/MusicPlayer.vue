@@ -1,6 +1,8 @@
 <template>
+  <!-- Music player container that only shows if a track is playing or if sound is initialized -->
   <div v-if="isPlaying || sound" class="player">
     <div class="player-info">
+      <!-- Album art or a default icon if no album art is available -->
       <div class="album-art">
         <img v-if="albumArtUrl" :src="albumArtUrl" alt="Album Art" />
         <div v-else class="default-album-art">
@@ -8,39 +10,51 @@
         </div>
       </div>
       <div class="track-details">
+        <!-- Display track title and artist/album details -->
         <span class="player-title">{{ currentTrack?.title || 'Unknown Title' }}</span><br>
         <span class="player-artist">{{ currentTrack?.artist || 'Unknown Artist' }} | {{ currentTrack?.album || 'Unknown Album' }}</span>
       </div>
     </div>
+
     <div class="player-controls">
       <div class="control-buttons">
+        <!-- Previous track button -->
         <button @click="prevTrack"><i class="fas fa-backward"></i></button>
+        <!-- Play/pause button based on current state -->
         <button v-if="isPlaying" @click="togglePlay">
           <i class="fas fa-pause"></i>
         </button>
         <button v-else @click="togglePlay">
           <i class="fas fa-play"></i>
         </button>
+        <!-- Next track button -->
         <button @click="nextTrack"><i class="fas fa-forward"></i></button>
       </div>
+      <!-- Track progress bar -->
       <input type="range" min="0" :max="duration" v-model="currentTime" @input="seek" class="time-range" />
+      <!-- Display current time and total duration -->
       <span class="time">{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</span>
     </div>
+
     <div class="player-options">
+      <!-- AI shuffle button with tooltip -->
       <div class="ai-shuffle-container" @click="aiShuffleQueue" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
         <button>
           <i class="fas fa-brain"></i>
         </button>
+        <!-- Tooltip text -->
         <div v-if="showTooltip" class="tooltip">
           Click here to have the artificial intelligence sort your play queue.
         </div>
       </div>
+      <!-- Loop and shuffle buttons -->
       <button @click="setPlayerMode('loop')" :class="{ active: musicPlayerMode === 'loop' }">
         <i class="fas fa-sync-alt"></i>
       </button>
       <button @click="setPlayerMode('shuffle')" :class="{ active: musicPlayerMode === 'shuffle' }">
         <i class="fas fa-random"></i>
       </button>
+      <!-- Queue display with upcoming tracks -->
       <div class="queue-control" @mouseenter="showQueue = true" @mouseleave="hideQueue">
         <i class="fas fa-list"></i>
         <div v-show="showQueue" class="queue-list">
@@ -52,11 +66,13 @@
           </ul>
         </div>
       </div>
+      <!-- Volume control -->
       <div class="volume-control" @mouseenter="showVolume = true" @mouseleave="hideVolume">
         <i class="fas fa-volume-up"></i>
         <input type="range" v-show="showVolume" min="0" max="1" step="0.01" v-model="volume" @input="changeVolume" class="volume-range" />
       </div>
     </div>
+    <!-- Popup message displayed when AI shuffle is activated -->
     <div v-if="showPopup" class="popup">
       Congratulations. The AI has just sorted your queue so that the most similar songs play next to each other.
     </div>
@@ -64,43 +80,47 @@
 </template>
 
 <script>
-import { Howl } from 'howler';
-import aiShuffle from '@/utils/aiShuffle';
-import axios from 'axios';
+import { Howl } from 'howler'; // Import Howler.js library for audio playback
+import aiShuffle from '@/utils/aiShuffle'; // Import AI shuffle utility function
+import axios from 'axios'; // Import axios for API requests
 
 export default {
   name: 'MusicPlayer',
   data() {
     return {
-      sound: null,
-      isPlaying: false,
-      currentTime: 0,
-      duration: 0,
-      currentTrack: null,
-      volume: 1.0,
-      showVolume: false,
-      musicPlayerMode: 'normal',
-      showQueue: false,
-      showTooltip: false,
-      showPopup: false,
-      playlist: [],
-      currentIndex: 0,
-      albumArtUrl: null,
+      sound: null, // Howl.js sound object
+      isPlaying: false, // Boolean to track if music is playing
+      currentTime: 0, // Current time of the track
+      duration: 0, // Total duration of the track
+      currentTrack: null, // Currently playing track details
+      volume: 1.0, // Volume level
+      showVolume: false, // Boolean to show/hide volume control
+      musicPlayerMode: 'normal', // Current player mode (normal, loop, shuffle)
+      showQueue: false, // Boolean to show/hide queue
+      showTooltip: false, // Boolean to show/hide tooltip
+      showPopup: false, // Boolean to show/hide popup message
+      playlist: [], // Array of tracks in the current playlist
+      currentIndex: 0, // Index of the currently playing track
+      albumArtUrl: null, // URL of the album art
     };
   },
   created() {
+    // Load the currently playing track queue from localStorage on component creation
     const savedQueue = localStorage.getItem('currentlyPlayingTrackQueue');
     if (savedQueue) {
       this.playlist = JSON.parse(savedQueue);
     }
+    // Load the saved music player mode from localStorage
     this.musicPlayerMode = localStorage.getItem('musicPlayerMode') || 'normal';
   },
   computed: {
+    // Compute the list of upcoming tracks in the queue
     upcomingTracks() {
       return this.playlist.slice(this.currentIndex + 1, this.currentIndex + 6);
     }
   },
   watch: {
+    // Watcher to update album art when the current track changes
     currentTrack(newTrack) {
       if (newTrack && newTrack._id) {
         localStorage.setItem('currentlyPlayingTrack', JSON.stringify(newTrack));
@@ -109,6 +129,7 @@ export default {
     }
   },
   methods: {
+    // Fetch the album art for the current track from the server
     async fetchAlbumArt(albumName, artistName) {
       try {
         const response = await axios.get(`http://localhost:5000/api/image/check`, {
@@ -122,6 +143,7 @@ export default {
         this.albumArtUrl = null;
       }
     },
+    // Play the selected track and load the playlist
     playTrack(track, playlist = [], startIndex = 0) {
       if (this.sound) {
         this.sound.unload();
@@ -139,6 +161,7 @@ export default {
       this.currentTrack = track || this.playlist[this.currentIndex] || {};
       this.loadAndPlayTrack(this.currentTrack);
     },
+    // Load and play the selected track using Howler.js
     loadAndPlayTrack(track) {
       if (!track || !track._id) {
         console.error("Invalid track data:", track);
@@ -163,6 +186,7 @@ export default {
       this.sound.play();
       this.sound.volume(this.volume);
     },
+    // Toggle play/pause state
     togglePlay() {
       if (this.isPlaying) {
         this.sound.pause();
@@ -171,11 +195,13 @@ export default {
       }
       this.isPlaying = !this.isPlaying;
     },
+    // Seek to a specific time in the track
     seek() {
       if (this.sound) {
         this.sound.seek(this.currentTime);
       }
     },
+    // Update the current time of the track while playing
     step() {
       if (this.sound) {
         this.currentTime = this.sound.seek();
@@ -184,44 +210,53 @@ export default {
         }
       }
     },
+    // Change the volume of the track
     changeVolume() {
       if (this.sound) {
         this.sound.volume(this.volume);
       }
     },
+    // Hide the volume control after a delay
     hideVolume() {
       setTimeout(() => {
         this.showVolume = false;
       }, 2000);
     },
+    // Format time in MM:SS format
     formatTime(seconds) {
       const minutes = Math.floor(seconds / 60);
       const secs = Math.floor(seconds % 60);
       return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
     },
+    // Set the player mode (normal, loop, shuffle)
     setPlayerMode(mode) {
       this.musicPlayerMode = this.musicPlayerMode === mode ? 'normal' : mode;
       localStorage.setItem('musicPlayerMode', this.musicPlayerMode);
     },
+    // Shuffle the playlist using AI and show a popup message
     aiShuffleQueue() {
       this.playlist = aiShuffle([...this.playlist]);
       localStorage.setItem('currentlyPlayingTrackQueue', JSON.stringify(this.playlist));
       this.showPopupMessage();
     },
+    // Show the popup message for AI shuffle
     showPopupMessage() {
       this.showPopup = true;
       setTimeout(() => {
         this.showPopup = false;
       }, 3000);
     },
+    // Play the previous track in the queue
     prevTrack() {
       this.currentIndex = this.currentIndex > 0 ? this.currentIndex - 1 : this.playlist.length - 1;
       this.playTrack(this.playlist[this.currentIndex]);
     },
+    // Play the next track in the queue
     nextTrack() {
       this.currentIndex = this.currentIndex < this.playlist.length - 1 ? this.currentIndex + 1 : 0;
       this.playTrack(this.playlist[this.currentIndex]);
     },
+    // Handle the event when a track ends
     onTrackEnded() {
       if (this.musicPlayerMode === 'loop') {
         this.playTrack(this.currentTrack);
@@ -229,6 +264,7 @@ export default {
         this.nextTrack();
       }
     },
+    // Hide the queue after a delay
     hideQueue() {
       setTimeout(() => {
         this.showQueue = false;

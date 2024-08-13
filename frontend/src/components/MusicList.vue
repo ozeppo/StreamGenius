@@ -1,168 +1,205 @@
 <template>
-    <div class="music-list-container">
-      <h2>{{ title }}</h2>
-      <ul class="music-list">
-        <li v-for="music in musicList" :key="music._id" class="music-item">
-          <div class="music-info">
-            <span class="music-title" @click="playMusic(music)">{{ music.title || 'Untitled' }}</span>
-            <span class="music-details">
-              <router-link v-if="music.artist" :to="{ name: 'Artist', params: { artistName: music.artist } }" class="link">{{ music.artist }}</router-link>
-              <span v-else class="link">Unknown Artist</span>
-              <span v-if="music.album"> | 
-                <router-link :to="{ name: 'Album', params: { artistName: music.artist || 'Unknown', albumName: music.album } }" class="link">{{ music.album }}</router-link>
-              </span>
+  <div class="music-list-container">
+    <!-- Display the title of the music list -->
+    <h2>{{ title }}</h2>
+    
+    <!-- List each music item in the fetched music list -->
+    <ul class="music-list">
+      <!-- Iterate over musicList and display each music item -->
+      <li v-for="music in musicList" :key="music._id" class="music-item">
+        <div class="music-info">
+          <!-- Display the title of the music, clicking will play the music -->
+          <span class="music-title" @click="playMusic(music)">{{ music.title || 'Untitled' }}</span>
+          <span class="music-details">
+            <!-- Link to the artist's page if artist information is available -->
+            <router-link v-if="music.artist" :to="{ name: 'Artist', params: { artistName: music.artist } }" class="link">{{ music.artist }}</router-link>
+            <span v-else class="link">Unknown Artist</span>
+            <!-- Display the album name, linking to the album's page -->
+            <span v-if="music.album"> | 
+              <router-link :to="{ name: 'Album', params: { artistName: music.artist || 'Unknown', albumName: music.album } }" class="link">{{ music.album }}</router-link>
             </span>
-          </div>
-          <div class="music-actions">
-            <button @click="toggleOptions(music._id)">...</button>
-            <div v-if="selectedMusic === music._id" class="music-options">
-              <button @click="openAddToPlaylistModal(music)">Add to Playlist</button>
-              <button @click="openEditMetadataModal(music)">Edit Metadata</button>
-            </div>
-          </div>
-        </li>
-      </ul>
-      <div v-if="showPlaylistModal" class="modal">
-        <div class="modal-content">
-          <h3>Select Playlist</h3>
-          <ul>
-            <li v-for="playlist in playlists" :key="playlist._id">
-              <button @click="addToPlaylist(playlist)">{{ playlist.name }}</button>
-            </li>
-          </ul>
-          <button @click="closeModal">Close</button>
+          </span>
         </div>
-      </div>
-      <div v-if="showEditMetadataModal" class="modal">
-        <div class="modal-content">
-          <h3>Edit Metadata</h3>
-          <form @submit.prevent="saveMetadata">
-            <div class="form-group">
-              <label for="title">Title</label>
-              <input v-model="metadata.title" id="title" type="text" required />
-            </div>
-            <div class="form-group">
-              <label for="artist">Artist</label>
-              <input v-model="metadata.artist" id="artist" type="text" required />
-            </div>
-            <div class="form-group">
-              <label for="album">Album</label>
-              <input v-model="metadata.album" id="album" type="text" />
-            </div>
-            <div class="form-group">
-              <label for="genre">Genre</label>
-              <input v-model="metadata.genre" id="genre" type="text" />
-            </div>
-            <button type="submit" class="save-button">Save</button>
-          </form>
-          <button @click="closeModal">Close</button>
+        <div class="music-actions">
+          <!-- Button to toggle options for the current music item -->
+          <button @click="toggleOptions(music._id)">...</button>
+          <!-- Display additional options for the selected music item -->
+          <div v-if="selectedMusic === music._id" class="music-options">
+            <!-- Option to add the music to a playlist -->
+            <button @click="openAddToPlaylistModal(music)">Add to Playlist</button>
+            <!-- Option to edit the metadata of the music item -->
+            <button @click="openEditMetadataModal(music)">Edit Metadata</button>
+          </div>
         </div>
+      </li>
+    </ul>
+    
+    <!-- Modal to select a playlist to add the music to -->
+    <div v-if="showPlaylistModal" class="modal">
+      <div class="modal-content">
+        <h3>Select Playlist</h3>
+        <ul>
+          <!-- List available playlists to add the selected music -->
+          <li v-for="playlist in playlists" :key="playlist._id">
+            <button @click="addToPlaylist(playlist)">{{ playlist.name }}</button>
+          </li>
+        </ul>
+        <button @click="closeModal">Close</button>
       </div>
     </div>
-  </template>
+    
+    <!-- Modal to edit the metadata of the selected music -->
+    <div v-if="showEditMetadataModal" class="modal">
+      <div class="modal-content">
+        <h3>Edit Metadata</h3>
+        <!-- Form to update music metadata -->
+        <form @submit.prevent="saveMetadata">
+          <div class="form-group">
+            <label for="title">Title</label>
+            <input v-model="metadata.title" id="title" type="text" required />
+          </div>
+          <div class="form-group">
+            <label for="artist">Artist</label>
+            <input v-model="metadata.artist" id="artist" type="text" required />
+          </div>
+          <div class="form-group">
+            <label for="album">Album</label>
+            <input v-model="metadata.album" id="album" type="text" />
+          </div>
+          <div class="form-group">
+            <label for="genre">Genre</label>
+            <input v-model="metadata.genre" id="genre" type="text" />
+          </div>
+          <button type="submit" class="save-button">Save</button>
+        </form>
+        <button @click="closeModal">Close</button>
+      </div>
+    </div>
+  </div>
+</template>
   
-  <script>
-  import axios from 'axios';
-  
-  export default {
-    props: {
-      apiEndpoint: {
-        type: String,
-        required: true
-      },
-      title: {
-        type: String,
-        required: true
+<script>
+import axios from 'axios';
+
+export default {
+  props: {
+    // The API endpoint from which the music list will be fetched
+    apiEndpoint: {
+      type: String,
+      required: true
+    },
+    // The title to display for this music list
+    title: {
+      type: String,
+      required: true
+    }
+  },
+  data() {
+    return {
+      musicList: [],  // Array to hold the fetched music items
+      selectedMusic: null,  // Currently selected music item for options display
+      showPlaylistModal: false,  // Boolean to control the visibility of the "Add to Playlist" modal
+      showEditMetadataModal: false,  // Boolean to control the visibility of the "Edit Metadata" modal
+      playlists: [],  // Array to hold fetched playlists
+      musicToAdd: null,  // The music item to be added to a playlist
+      editMetadata: {
+        title: '',
+        artist: '',
+        album: '',
+        genre: ''
+      },  // Object to hold metadata of the music item being edited
+      musicToEdit: null,  // The music item being edited
+    };
+  },
+  async created() {
+    // Fetch the music list and playlists when the component is created
+    await this.fetchMusic();
+    await this.fetchPlaylists();
+  },
+  methods: {
+    // Fetch the music list from the provided API endpoint
+    async fetchMusic() {
+      try {
+        const res = await axios.get(this.apiEndpoint);
+        this.musicList = res.data;
+      } catch (error) {
+        console.error('Error fetching music:', error);
       }
     },
-    data() {
-      return {
-        musicList: [],
-        selectedMusic: null,
-        showPlaylistModal: false,
-        showEditMetadataModal: false,
-        playlists: [],
-        musicToAdd: null,
-        editMetadata: {
-          title: '',
-          artist: '',
-          album: '',
-          genre: ''
-        },
-        musicToEdit: null,
-      };
+    // Fetch available playlists from the API
+    async fetchPlaylists() {
+      try {
+        const res = await axios.get('http://localhost:5000/api/playlist');
+        this.playlists = res.data;
+      } catch (error) {
+        console.error('Error fetching playlists:', error);
+      }
     },
-    async created() {
-      await this.fetchMusic();
-      await this.fetchPlaylists();
+    // Handle the playing of a music track
+    playMusic(music) {
+      // Create a playlist array from the current music list
+      const playlist = this.musicList.map(track => ({ ...track }));
+      // Find the index of the selected music in the playlist
+      const startIndex = playlist.findIndex(track => track._id === music._id);
+      // Emit the 'play' event to the parent component, passing the selected music, playlist, and startIndex
+      this.$emit('play', music, playlist, startIndex);
+      // Save the currently playing track queue in local storage
+      localStorage.setItem('currentlyPlayingTrackQueue', JSON.stringify(playlist));
     },
-    methods: {
-      async fetchMusic() {
-        try {
-          const res = await axios.get(this.apiEndpoint);
-          this.musicList = res.data;
-        } catch (error) {
-          console.error('Error fetching music:', error);
-        }
-      },
-      async fetchPlaylists() {
-        try {
-          const res = await axios.get('http://localhost:5000/api/playlist');
-          this.playlists = res.data;
-        } catch (error) {
-          console.error('Error fetching playlists:', error);
-        }
-      },
-      playMusic(music) {
-        const playlist = this.musicList.map(track => ({ ...track }));
-        const startIndex = playlist.findIndex(track => track._id === music._id);
-        this.$emit('play', music, playlist, startIndex);
-        localStorage.setItem('currentlyPlayingTrackQueue', JSON.stringify(playlist));
-      },
-      toggleOptions(musicId) {
-        this.selectedMusic = this.selectedMusic === musicId ? null : musicId;
-      },
-      openAddToPlaylistModal(music) {
-        this.musicToAdd = music;
-        this.showPlaylistModal = true;
-      },
-      openEditMetadataModal(music) {
-        this.musicToEdit = music;
-        this.editMetadata = { ...music };
-        this.showEditMetadataModal = true;
-      },
-      closeModal() {
-        this.showPlaylistModal = false;
-        this.showEditMetadataModal = false;
-        this.musicToAdd = null;
-        this.musicToEdit = null;
-      },
-      async addToPlaylist(playlist) {
-        try {
-          playlist.songs.push(this.musicToAdd._id);
-          await axios.patch(`http://localhost:5000/api/playlist/${playlist._id}`, playlist);
-          this.closeModal();
-        } catch (error) {
-          console.error('Error adding to playlist:', error);
-        }
-      },
-      async saveMetadata() {
-        if (!this.musicToEdit) return;
-  
-        try {
-          const updatedMusic = { ...this.editMetadata };
-          await axios.patch(`http://localhost:5000/api/music/${this.musicToEdit._id}`, updatedMusic);
-          this.musicList = this.musicList.map(music => 
-            music._id === this.musicToEdit._id ? updatedMusic : music
-          );
-          this.closeModal();
-        } catch (error) {
-          console.error('Error updating metadata:', error);
-        }
+    // Toggle the visibility of options for a specific music item
+    toggleOptions(musicId) {
+      this.selectedMusic = this.selectedMusic === musicId ? null : musicId;
+    },
+    // Open the modal to add the selected music to a playlist
+    openAddToPlaylistModal(music) {
+      this.musicToAdd = music;
+      this.showPlaylistModal = true;
+    },
+    // Open the modal to edit the metadata of the selected music
+    openEditMetadataModal(music) {
+      this.musicToEdit = music;
+      this.editMetadata = { ...music };
+      this.showEditMetadataModal = true;
+    },
+    // Close all modals
+    closeModal() {
+      this.showPlaylistModal = false;
+      this.showEditMetadataModal = false;
+      this.musicToAdd = null;
+      this.musicToEdit = null;
+    },
+    // Add the selected music to a specific playlist
+    async addToPlaylist(playlist) {
+      try {
+        // Add the music's ID to the playlist's songs array
+        playlist.songs.push(this.musicToAdd._id);
+        // Update the playlist on the server
+        await axios.patch(`http://localhost:5000/api/playlist/${playlist._id}`, playlist);
+        this.closeModal();
+      } catch (error) {
+        console.error('Error adding to playlist:', error);
+      }
+    },
+    // Save the updated metadata for the selected music item
+    async saveMetadata() {
+      if (!this.musicToEdit) return;
+
+      try {
+        const updatedMusic = { ...this.editMetadata };
+        // Update the music item on the server
+        await axios.patch(`http://localhost:5000/api/music/${this.musicToEdit._id}`, updatedMusic);
+        // Update the local music list with the updated data
+        this.musicList = this.musicList.map(music => 
+          music._id === this.musicToEdit._id ? updatedMusic : music
+        );
+        this.closeModal();
+      } catch (error) {
+        console.error('Error updating metadata:', error);
       }
     }
-  };
-  </script>
+  }
+};
+</script>
   
   <style>
   .music-list-container {

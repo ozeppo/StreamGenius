@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <HeaderComponent />
+    <HeaderComponent class="header-component"/>
     <div class="content-wrapper">
       <PlaylistSidebar />
       <div class="main-content">
