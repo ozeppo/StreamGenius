@@ -32,7 +32,11 @@ const musicSchema = new mongoose.Schema({
     filePath: {
         type: String,
         required: true
-    }
+    },
+    lyrics: {
+        type: String,
+        required: false
+    },
 });
 
 module.exports = mongoose.model('Music', musicSchema);

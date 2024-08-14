@@ -5,6 +5,7 @@ import ArtistView from './views/ArtistView.vue';
 import AlbumView from './views/AlbumView.vue';
 import PlaylistDetailView from './views/PlaylistDetailView.vue';
 import SearchResults from '@/views/SearchResults.vue';
+import LyricsView from './views/LyricsView.vue';
 
 const routes = [
     {
@@ -37,6 +38,11 @@ const routes = [
       name: 'SearchResults', 
       component: SearchResults 
     },
+    {
+      path: '/lyrics',
+    name: 'LyricsView',
+    component: LyricsView
+    }
   ];
   
   const router = createRouter({

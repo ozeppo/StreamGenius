@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const musicController = require('../controllers/musicController');
 const { upload } = require('../utils/fileUpload');
+const lyricsController = require('../controllers/lyricsController');
 
 // Upload files
 router.post('/upload', upload.single('file'), musicController.uploadMusic);
@@ -10,6 +11,11 @@ router.post('/upload', upload.single('file'), musicController.uploadMusic);
 router.patch('/:id', musicController.updateMetadata);
 
 router.get('/search', musicController.searchMusic);
+
+// Lyrics Routes
+router.get('/lyrics', lyricsController.getLyrics);
+router.patch('/lyrics', lyricsController.updateLyrics);
+router.get('/lyrics/similar', lyricsController.getSimilarLyrics);
 
 // Get infos for musics, artists and albums
 router.get('/', musicController.getAllMusic);

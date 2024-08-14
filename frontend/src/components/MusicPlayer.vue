@@ -66,6 +66,10 @@
           </ul>
         </div>
       </div>
+      <!-- Button that navigates to Lyrics view -->
+      <div class="lyrics-button" @click="goToLyrics">
+        <i class="fas fa-microphone-alt"></i>  
+      </div>
       <!-- Volume control -->
       <div class="volume-control" @mouseenter="showVolume = true" @mouseleave="hideVolume">
         <i class="fas fa-volume-up"></i>
@@ -269,7 +273,10 @@ export default {
       setTimeout(() => {
         this.showQueue = false;
       }, 2000);
-    }
+    },
+    goToLyrics() {
+      this.$router.push({ name: 'LyricsView' });
+    },
   }
 };
 </script>
