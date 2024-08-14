@@ -302,6 +302,7 @@ export default {
   flex: 0.25;
   color: white;
   text-align: left;
+  overflow: hidden;
 }
 
 .album-art {
@@ -329,6 +330,8 @@ export default {
 
 .track-details {
   overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .player-title {
@@ -352,6 +355,8 @@ export default {
   flex: 0.5;
   justify-content: center;
   flex-direction: column;
+  max-width: 400px;
+  width: 100%;
 }
 
 .control-buttons {
@@ -438,6 +443,9 @@ export default {
   padding: 10px;
   border-radius: 5px;
   width: 200px;
+  z-index: 999;
+  overflow-y: auto;
+  max-height: 150px;
 }
 
 .volume-control {
@@ -509,12 +517,5 @@ export default {
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
   font-size: 1rem;
   z-index: 1000;
-}
-
-.control-buttons {
-  display: flex;
-  justify-content: center;
-  width: 50%;
-  margin-bottom: 5px;
 }
 </style>
