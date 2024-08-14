@@ -299,7 +299,7 @@ export default {
 .player-info {
   display: flex;
   align-items: center;
-  flex: 0.25;
+  flex: 0.4;
   color: white;
   text-align: left;
   overflow: hidden;
@@ -352,11 +352,9 @@ export default {
 .player-controls {
   display: flex;
   align-items: center;
-  flex: 0.5;
+  flex: 1;
   justify-content: center;
   flex-direction: column;
-  max-width: 400px;
-  width: 100%;
 }
 
 .control-buttons {
@@ -371,7 +369,7 @@ export default {
   color: white;
   cursor: pointer;
   font-size: 1.5rem;
-  margin: 0 10px;
+  margin: 0 15px;
 }
 
 .control-buttons button:hover {
@@ -379,7 +377,7 @@ export default {
 }
 
 .time-range {
-  width: 100%;
+  width: 60%; /* Zwiększono szerokość paska czasu */
   height: 5px;
   background: #333;
   border-radius: 5px;
@@ -412,8 +410,9 @@ export default {
 .player-options {
   display: flex;
   align-items: center;
-  flex: 0.25;
+  flex: 0.4;
   justify-content: flex-end;
+  gap: 20px; /* Zwiększono odstępy między ikonami */
 }
 
 .player-options button {
@@ -422,7 +421,6 @@ export default {
   color: white;
   cursor: pointer;
   font-size: 1.5rem;
-  margin-left: 10px;
 }
 
 .player-options button.active {
@@ -443,9 +441,6 @@ export default {
   padding: 10px;
   border-radius: 5px;
   width: 200px;
-  z-index: 999;
-  overflow-y: auto;
-  max-height: 150px;
 }
 
 .volume-control {

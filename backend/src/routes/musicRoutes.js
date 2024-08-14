@@ -7,15 +7,15 @@ const lyricsController = require('../controllers/lyricsController');
 // Upload files
 router.post('/upload', upload.single('file'), musicController.uploadMusic);
 
-// Update info
-router.patch('/:id', musicController.updateMetadata);
-
-router.get('/search', musicController.searchMusic);
-
 // Lyrics Routes
 router.get('/lyrics', lyricsController.getLyrics);
 router.patch('/lyrics', lyricsController.updateLyrics);
 router.get('/lyrics/similar', lyricsController.getSimilarLyrics);
+
+// Update info
+router.patch('/:id', musicController.updateMetadata);
+
+router.get('/search', musicController.searchMusic);
 
 // Get infos for musics, artists and albums
 router.get('/', musicController.getAllMusic);

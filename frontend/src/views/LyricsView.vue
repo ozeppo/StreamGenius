@@ -106,7 +106,7 @@ export default {
     async saveLyrics() {
       // Code to save edited lyrics to the backend
       try {
-        await axios.post(`http://localhost:5000/api/music/lyrics/save`, {
+        await axios.patch(`http://localhost:5000/api/music/lyrics/`, {
           title: this.currentTrack.title,
           artist: this.currentTrack.artist,
           lyrics: this.editedLyrics,

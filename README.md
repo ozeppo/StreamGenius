@@ -43,13 +43,16 @@ To set up the StreamGenius on your own server, follow these steps:
    npm install
    ```
 
-3. **Set Up Environment Variables:**
+3. **Set up configuration file:**
 
-   Create a `.env` file in the backend directory with the following content:
+   Create a `config.js` file in the backend directory with the following content:
 
-   ```plaintext
-   PORT=5000
-   MONGO_URI=your_mongodb_connection_string
+   ```js
+   module.exports = {
+      mongoURI: 'YOUR_MONGODB_CONNECTION_URI',
+      port: 5000,
+      GENIUS_ACCESS_TOKEN: "YOUR_GENIUS.COM_API_TOKEN"
+   };
    ```
 
 4. **Start the Application:**
@@ -57,14 +60,14 @@ To set up the StreamGenius on your own server, follow these steps:
    First, start the backend server:
 
    ```bash
-   cd backend
-   npm start
+   cd ./backend
+   npm run start
    ```
 
    Then, start the frontend development server:
 
    ```bash
-   cd ../frontend
+   cd ./frontend
    npm run serve
    ```
 

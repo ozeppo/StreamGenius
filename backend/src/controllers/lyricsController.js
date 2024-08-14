@@ -45,6 +45,8 @@ exports.updateLyrics = async (req, res) => {
   try {
     const { title, artist, lyrics } = req.body;
 
+    console.log(`Trying to update Lyrics for ${title} by ${artist} with new lyrics: ` + lyrics );
+
     const song = await Music.findOne({ title, artist });
 
     if (!song) {
