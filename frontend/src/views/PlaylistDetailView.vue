@@ -1,7 +1,25 @@
 <template>
   <div class="playlist-view">
+    <!-- Playlist Header with Play, Shuffle, and AI Shuffle buttons -->
     <div class="playlist-header">
-      <h1>{{ playlistName }}</h1>
+      <div class="header-content">
+        <h1>{{ playlistName }}</h1>
+        <div class="playlist-buttons">
+          <!-- Play Button -->
+          <button @click="playPlaylist" class="play-button">
+            <i class="fas fa-play"></i> Play
+          </button>
+          <!-- Shuffle Button -->
+          <button @click="shufflePlaylist" class="shuffle-button">
+            <i class="fas fa-random"></i> Shuffle
+          </button>
+          <!-- AI Shuffle Button -->
+          <button @click="aiShufflePlaylist" class="ai-shuffle-button">
+            <i class="fas fa-brain"></i> AI Shuffle
+          </button>
+        </div>
+      </div>
+      <!-- Playlist Image or Upload Placeholder -->
       <div class="playlist-image-container">
         <div v-if="playlistImage" class="image-preview">
           <img :src="playlistImage" alt="Playlist Image" />
@@ -14,6 +32,7 @@
         </div>
       </div>
     </div>
+    <!-- Music List Component for displaying songs in the playlist -->
     <MusicList :apiEndpoint="`http://localhost:5000/api/playlist/${playlistId}/songs`" :title="`Track List`" @play="playTrack" />
   </div>
 </template>
@@ -21,6 +40,7 @@
 <script>
 import MusicList from '@/components/MusicList.vue';
 import axios from 'axios';
+import aiShuffle from '@/utils/aiShuffle'; // Import AI shuffle utility
 
 export default {
   components: {
@@ -32,11 +52,13 @@ export default {
       playlistName: '',
       playlistImage: null,
       imageFile: null,
+      songs: [], // To store the fetched songs for playing
     };
   },
   async created() {
     await this.fetchPlaylistName();
     await this.checkImage();
+    await this.fetchSongs(); // Fetch songs when the component is created
   },
   methods: {
     async fetchPlaylistName() {
@@ -87,14 +109,41 @@ export default {
         }
       }
     },
+    async fetchSongs() {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/playlist/${this.playlistId}/songs`);
+        this.songs = res.data;
+      } catch (error) {
+        console.error('Error fetching songs:', error);
+      }
+    },
     playTrack(track) {
       this.$emit('play', track);
+    },
+    // Play function for playing the playlist in normal order
+    playPlaylist() {
+      if (this.songs.length > 0) {
+        this.$emit('play', this.songs[0], this.songs, 0);
+        localStorage.setItem('currentlyPlayingTrackQueue', JSON.stringify(this.songs));
+      }
+    },
+    // Shuffle function for randomizing the playlist
+    shufflePlaylist() {
+      const shuffledSongs = this.songs.sort(() => Math.random() - 0.5);
+      this.$emit('play', shuffledSongs[0], shuffledSongs, 0);
+      localStorage.setItem('currentlyPlayingTrackQueue', JSON.stringify(shuffledSongs));
+    },
+    // AI Shuffle function for intelligent sorting and playing
+    aiShufflePlaylist() {
+      const shuffledSongs = aiShuffle([...this.songs]);
+      this.$emit('play', shuffledSongs[0], shuffledSongs, 0);
+      localStorage.setItem('currentlyPlayingTrackQueue', JSON.stringify(shuffledSongs));
     }
   }
 };
 </script>
 
-<style>
+<style scoped>
 .playlist-view {
   padding: 2rem;
 }
@@ -103,6 +152,36 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 1rem;
+}
+
+.header-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.playlist-buttons {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.play-button,
+.shuffle-button,
+.ai-shuffle-button {
+  background-color: #1DB954;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.play-button:hover,
+.shuffle-button:hover,
+.ai-shuffle-button:hover {
+  background-color: #1ed760;
 }
 
 .playlist-image-container {

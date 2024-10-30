@@ -78,7 +78,7 @@ export default {
       }
     },
     formatLyrics() {
-      this.formattedLyrics = this.lyrics.replace(/\[([^\]]+)\]/g, '<span class="lyric-tag">[$1]</span>');
+      this.formattedLyrics = this.lyrics.replaceAll(/\[([^\]]+)\]/g, '<span style="font-weight: 900">[$1]</span>');
     },
     async fetchSimilarResults(title, artist) {
       try {
@@ -179,8 +179,7 @@ h2 {
 }
 
 .lyric-tag {
-  font-weight: bold;
-  color: #bb86fc;
+  font-weight: 800;
 }
 
 .edit-popup {
